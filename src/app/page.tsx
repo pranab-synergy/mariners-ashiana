@@ -1,64 +1,135 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { Allocation } from "@/types";
+import {
+  PLOTS,
+  MEMBERS,
+  SAMEER,
+  PLOT_221,
+  LOTTERY_PLOTS,
+  LOTTERY_MEMBERS,
+} from "@/lib/data";
+import { fisherYatesShuffle } from "@/lib/shuffle";
+import { saveDrawState, loadDrawState, DrawMode } from "@/lib/storage";
+import Header from "@/components/Header";
+import PlotImages from "@/components/PlotImages";
+import DrawControls from "@/components/DrawControls";
+import AllocationTable from "@/components/AllocationTable";
+import ConfirmationBanner from "@/components/ConfirmationBanner";
+
+type Tab = "full" | "partial";
+
+function useDrawState(mode: DrawMode, buildAllocations: () => Allocation[]) {
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockedAt, setLockedAt] = useState<string | undefined>();
+  const [hasDrawn, setHasDrawn] = useState(false);
+
+  useEffect(() => {
+    const saved = loadDrawState(mode);
+    if (saved?.isLocked) {
+      setAllocations(saved.allocations);
+      setIsLocked(true);
+      setLockedAt(saved.lockedAt);
+      setHasDrawn(true);
+    } else {
+      setAllocations([]);
+      setIsLocked(false);
+      setLockedAt(undefined);
+      setHasDrawn(false);
+    }
+  }, [mode]);
+
+  const handleDraw = useCallback(() => {
+    setAllocations(buildAllocations());
+    setHasDrawn(true);
+  }, [buildAllocations]);
+
+  const handleConfirm = useCallback(() => {
+    const confirmed = window.confirm(
+      "Are you sure you want to lock this allocation? This cannot be undone."
+    );
+    if (!confirmed) return;
+    const now = new Date().toISOString();
+    setIsLocked(true);
+    setLockedAt(now);
+    saveDrawState(mode, { allocations, isLocked: true, lockedAt: now });
+  }, [mode, allocations]);
+
+  return { allocations, isLocked, lockedAt, hasDrawn, handleDraw, handleConfirm };
+}
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<Tab>("full");
+
+  const buildFullAllocations = useCallback((): Allocation[] => {
+    const shuffled = fisherYatesShuffle(MEMBERS);
+    return PLOTS.map((plot, i) => ({ member: shuffled[i], plot }));
+  }, []);
+
+  const buildPartialAllocations = useCallback((): Allocation[] => {
+    const fixed: Allocation = { member: SAMEER, plot: PLOT_221 };
+    const shuffled = fisherYatesShuffle(LOTTERY_MEMBERS);
+    const rest = LOTTERY_PLOTS.map((plot, i) => ({ member: shuffled[i], plot }));
+    return [fixed, ...rest];
+  }, []);
+
+  const full = useDrawState("full", buildFullAllocations);
+  const partial = useDrawState("partial", buildPartialAllocations);
+  const current = activeTab === "full" ? full : partial;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-stone-50">
+      <Header />
+      <main className="max-w-5xl mx-auto px-4 pb-12">
+        {/* Tabs */}
+        <div className="flex justify-center gap-2 pt-6 pb-2 print:hidden">
+          <button
+            onClick={() => setActiveTab("full")}
+            className={`px-5 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+              activeTab === "full"
+                ? "bg-white text-indigo-700 border border-b-0 border-gray-200"
+                : "bg-gray-100 text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Full Lottery (All 8)
+          </button>
+          <button
+            onClick={() => setActiveTab("partial")}
+            className={`px-5 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+              activeTab === "partial"
+                ? "bg-white text-indigo-700 border border-b-0 border-gray-200"
+                : "bg-gray-100 text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            Sameer → 221, Lottery for Rest
+          </button>
+        </div>
+
+        {/* Tab description */}
+        <p className="text-center text-sm text-gray-500 mb-4">
+          {activeTab === "full"
+            ? "All 8 members randomly assigned to all 8 plots."
+            : "Plot 221 is pre-assigned to Sameer Shashwat. Remaining 7 plots drawn for 7 members."}
+        </p>
+
+        <DrawControls
+          onDraw={current.handleDraw}
+          onConfirm={current.handleConfirm}
+          isLocked={current.isLocked}
+          hasDrawn={current.hasDrawn}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <AllocationTable
+          allocations={current.allocations}
+          isLocked={current.isLocked}
+        />
+        {current.isLocked && current.lockedAt && (
+          <ConfirmationBanner lockedAt={current.lockedAt} />
+        )}
+
+        {/* Images moved below the lottery */}
+        <PlotImages />
       </main>
     </div>
   );

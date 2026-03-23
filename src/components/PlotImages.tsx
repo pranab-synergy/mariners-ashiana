@@ -2,17 +2,16 @@ import Image from "next/image";
 
 export default function PlotImages() {
   return (
-    <section className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+    <section className="grid grid-cols-2 gap-4 py-6 max-w-2xl mx-auto">
       <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
         <Image
           src="/images/plots-strip.png"
           alt="8 Plots Strip - Plots 221 to 228"
-          width={400}
-          height={800}
-          className="w-full h-auto"
-          priority
+          width={250}
+          height={500}
+          className="w-full h-auto max-h-72 object-contain"
         />
-        <p className="text-center text-sm text-gray-500 py-2">
+        <p className="text-center text-xs text-gray-500 py-1">
           Plots 221 &ndash; 228 Strip
         </p>
       </div>
@@ -20,12 +19,11 @@ export default function PlotImages() {
         <Image
           src="/images/full-map.jpeg"
           alt="Full Layout Map with all plots"
-          width={800}
-          height={600}
-          className="w-full h-auto"
-          priority
+          width={400}
+          height={300}
+          className="w-full h-auto max-h-72 object-contain"
         />
-        <p className="text-center text-sm text-gray-500 py-2">
+        <p className="text-center text-xs text-gray-500 py-1">
           Full Layout Map
         </p>
       </div>

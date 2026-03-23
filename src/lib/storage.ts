@@ -24,3 +24,11 @@ export function loadDrawState(mode: DrawMode): DrawState | null {
     return null;
   }
 }
+
+export function clearDrawState(mode: DrawMode): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS[mode]);
+  } catch {
+    // localStorage unavailable
+  }
+}

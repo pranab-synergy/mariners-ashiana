@@ -11,7 +11,7 @@ import {
   LOTTERY_MEMBERS,
 } from "@/lib/data";
 import { fisherYatesShuffle } from "@/lib/shuffle";
-import { saveDrawState, loadDrawState, DrawMode } from "@/lib/storage";
+import { saveDrawState, loadDrawState, clearDrawState, DrawMode } from "@/lib/storage";
 import Header from "@/components/Header";
 import PlotImages from "@/components/PlotImages";
 import DrawControls from "@/components/DrawControls";
@@ -57,7 +57,21 @@ function useDrawState(mode: DrawMode, buildAllocations: () => Allocation[]) {
     saveDrawState(mode, { allocations, isLocked: true, lockedAt: now });
   }, [mode, allocations]);
 
-  return { allocations, isLocked, lockedAt, hasDrawn, handleDraw, handleConfirm };
+  const handleUnlock = useCallback(() => {
+    const password = window.prompt("Enter admin password to unlock:");
+    if (password === null) return;
+    if (password !== "admin@015") {
+      window.alert("Incorrect password.");
+      return;
+    }
+    clearDrawState(mode);
+    setAllocations([]);
+    setIsLocked(false);
+    setLockedAt(undefined);
+    setHasDrawn(false);
+  }, [mode]);
+
+  return { allocations, isLocked, lockedAt, hasDrawn, handleDraw, handleConfirm, handleUnlock };
 }
 
 export default function Home() {
@@ -117,6 +131,7 @@ export default function Home() {
         <DrawControls
           onDraw={current.handleDraw}
           onConfirm={current.handleConfirm}
+          onUnlock={current.handleUnlock}
           isLocked={current.isLocked}
           hasDrawn={current.hasDrawn}
         />

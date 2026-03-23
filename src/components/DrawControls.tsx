@@ -1,6 +1,7 @@
 interface DrawControlsProps {
   onDraw: () => void;
   onConfirm: () => void;
+  onUnlock: () => void;
   isLocked: boolean;
   hasDrawn: boolean;
 }
@@ -8,6 +9,7 @@ interface DrawControlsProps {
 export default function DrawControls({
   onDraw,
   onConfirm,
+  onUnlock,
   isLocked,
   hasDrawn,
 }: DrawControlsProps) {
@@ -31,9 +33,17 @@ export default function DrawControls({
       )}
 
       {isLocked && (
-        <span className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium">
-          Locked
-        </span>
+        <>
+          <span className="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium">
+            Locked
+          </span>
+          <button
+            onClick={onUnlock}
+            className="px-6 py-2 bg-rose-600 text-white font-semibold rounded-lg shadow-md hover:bg-rose-700 active:scale-95 transition-all text-sm"
+          >
+            Unlock
+          </button>
+        </>
       )}
     </div>
   );
